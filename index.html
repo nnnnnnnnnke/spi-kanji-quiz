@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SPI漢字 語句の意味クイズ</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .container {
+    background: #fff;
+    border-radius: 16px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    max-width: 680px;
+    width: 100%;
+    padding: 32px;
+  }
+  .screen[hidden] { display: none; }
+  h1 { font-size: 22px; color: #333; margin-bottom: 8px; }
+  h2 { font-size: 17px; color: #444; margin-bottom: 12px; }
+  .subtitle { color: #777; font-size: 14px; margin-bottom: 24px; }
+
+  /* Start screen */
+  .setting { margin-bottom: 24px; }
+  .setting label { display: block; font-size: 14px; color: #555; margin-bottom: 10px; font-weight: 600; }
+  .count-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 8px;
+  }
+  .count-options button {
+    padding: 14px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.15s;
+  }
+  .count-options button:hover { border-color: #667eea; }
+  .count-options button.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+  }
+  .dataset-info {
+    background: #f8f9ff;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 13px;
+    color: #667;
+    margin-bottom: 20px;
+  }
+
+  /* Quiz header */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 2px solid #f0f0f0;
+  }
+  .progress-info {
+    display: flex;
+    justify-content: space-between;
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 10px;
+  }
+  .progress-info strong { color: #667eea; font-size: 16px; }
+
+  /* History squares */
+  .history {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 18px;
+    padding: 8px;
+    background: #f8f9ff;
+    border-radius: 8px;
+    min-height: 28px;
+  }
+  .history .cell {
+    width: 16px;
+    height: 16px;
+    background: #e0e0e0;
+    border-radius: 3px;
+    transition: all 0.2s;
+  }
+  .history .cell.ok { background: #28a745; }
+  .history .cell.ng { background: #dc3545; }
+  .history .cell.current {
+    background: #667eea;
+    transform: scale(1.25);
+    box-shadow: 0 0 0 2px rgba(102,126,234,0.3);
+  }
+  .history.large .cell { width: 20px; height: 20px; }
+
+  /* Question */
+  .question-area {
+    background: #f8f9ff;
+    border-radius: 12px;
+    padding: 28px 20px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .prompt { font-size: 13px; color: #888; margin-bottom: 12px; }
+  .word {
+    font-size: 52px;
+    font-weight: 700;
+    color: #333;
+    letter-spacing: 4px;
+    margin-bottom: 8px;
+    line-height: 1.2;
+  }
+  .reading {
+    font-size: 15px;
+    color: #999;
+    visibility: hidden;
+  }
+  .reading.show { visibility: visible; }
+
+  .choices { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+  .choice {
+    padding: 14px 18px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 15px;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: inherit;
+  }
+  .choice:hover:not(:disabled) {
+    border-color: #667eea;
+    background: #f8f9ff;
+    transform: translateX(4px);
+  }
+  .choice:disabled { cursor: default; }
+  .choice.correct {
+    background: #d4edda;
+    border-color: #28a745;
+    color: #155724;
+  }
+  .choice.wrong {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+  }
+  .choice .label {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    line-height: 22px;
+    text-align: center;
+    background: #667eea;
+    color: white;
+    border-radius: 50%;
+    margin-right: 10px;
+    font-size: 12px;
+  }
+  .choice.correct .label { background: #28a745; }
+  .choice.wrong .label { background: #dc3545; }
+
+  .feedback {
+    padding: 12px 14px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+    font-size: 14px;
+    display: none;
+  }
+  .feedback.show { display: block; }
+  .feedback.ok { background: #d4edda; color: #155724; }
+  .feedback.ng { background: #f8d7da; color: #721c24; }
+
+  .controls { display: flex; gap: 10px; }
+  button.primary {
+    flex: 1;
+    padding: 13px;
+    background: #667eea;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.primary:hover { background: #5568d3; }
+  button.primary:disabled { background: #ccc; cursor: not-allowed; }
+  button.secondary {
+    padding: 13px 18px;
+    background: #fff;
+    color: #667eea;
+    border: 2px solid #667eea;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.secondary:hover { background: #f0f3ff; }
+  button.ghost {
+    padding: 8px 14px;
+    background: transparent;
+    color: #999;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  button.ghost:hover { background: #f8f8f8; color: #666; }
+
+  /* SRS dashboard */
+  .dashboard {
+    background: #f8f9ff;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+  }
+  .dash-title {
+    font-size: 13px;
+    color: #667;
+    font-weight: 600;
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .dash-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .dash-cell {
+    background: #fff;
+    padding: 10px 8px;
+    border-radius: 8px;
+    text-align: center;
+  }
+  .dash-num { font-size: 20px; font-weight: 700; color: #333; }
+  .dash-num.due { color: #e67e22; }
+  .dash-num.new { color: #667eea; }
+  .dash-num.mastered { color: #28a745; }
+  .dash-label { font-size: 11px; color: #888; margin-top: 2px; }
+
+  .level-bars { display: flex; gap: 3px; height: 24px; margin-top: 8px; border-radius: 6px; overflow: hidden; background: #e5e5e5; }
+  .level-bar {
+    position: relative;
+    transition: flex 0.3s;
+  }
+  .level-bar[data-lvl="0"] { background: #ddd; }
+  .level-bar[data-lvl="1"] { background: #f9c784; }
+  .level-bar[data-lvl="2"] { background: #f5a65b; }
+  .level-bar[data-lvl="3"] { background: #88c999; }
+  .level-bar[data-lvl="4"] { background: #5cb85c; }
+  .level-bar[data-lvl="5"] { background: #3d9970; }
+  .level-bar[data-lvl="6"] { background: #2c5f2d; }
+  .level-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 10px;
+    color: #999;
+    margin-top: 4px;
+  }
+
+  /* Mode selector */
+  .mode-options {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+  .mode-options button {
+    padding: 12px;
+    background: #fff;
+    border: 2px solid #e0e0e0;
+    border-radius: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    font-family: inherit;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .mode-options button:hover:not(:disabled) { border-color: #667eea; }
+  .mode-options button:disabled { opacity: 0.4; cursor: not-allowed; }
+  .mode-options button.active {
+    background: #667eea;
+    border-color: #667eea;
+    color: white;
+  }
+  .mode-options button.active .mode-sub { color: rgba(255,255,255,0.8); }
+  .mode-title { font-size: 14px; font-weight: 600; }
+  .mode-sub { font-size: 11px; color: #888; margin-top: 2px; }
+
+  /* Timer bar */
+  .timer-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .timer-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .timer-bar {
+    height: 100%;
+    width: 100%;
+    background: #28a745;
+    border-radius: 4px;
+  }
+  .timer-bar.warn { background: #ffc107; }
+  .timer-bar.danger { background: #dc3545; }
+  .timer-text {
+    font-size: 13px;
+    color: #666;
+    font-variant-numeric: tabular-nums;
+    min-width: 36px;
+    text-align: right;
+    font-weight: 600;
+  }
+  .timer-text.danger { color: #dc3545; }
+
+  /* SRS pill in quiz */
+  .srs-pill {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    margin-left: 6px;
+    background: #eef;
+    color: #559;
+  }
+  .srs-pill.new { background: #e7ecff; color: #667eea; }
+  .srs-pill.lv { background: #f0f8f0; color: #3d9970; }
+  .next-review {
+    font-size: 11px;
+    color: #888;
+    margin-top: 4px;
+  }
+
+  /* Result screen */
+  .final-score {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 28px;
+    border-radius: 12px;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .score-big { font-size: 48px; font-weight: 700; margin-bottom: 4px; }
+  .score-rate { font-size: 16px; opacity: 0.9; }
+  .score-label { font-size: 13px; opacity: 0.8; margin-bottom: 6px; }
+
+  .review { margin-top: 20px; }
+  .review ul { list-style: none; max-height: 280px; overflow-y: auto; }
+  .review li {
+    padding: 10px 12px;
+    background: #fff5f5;
+    border-left: 3px solid #dc3545;
+    border-radius: 4px;
+    margin-bottom: 6px;
+    font-size: 14px;
+  }
+  .review li .rw { font-weight: 600; color: #333; }
+  .review li .rr { color: #888; font-size: 12px; margin-left: 6px; }
+  .review li .rm { color: #555; margin-top: 2px; }
+  .review li .rpick { color: #b54; font-size: 12px; margin-top: 2px; }
+  .review .allgood {
+    padding: 16px;
+    background: #d4edda;
+    color: #155724;
+    border-radius: 8px;
+    text-align: center;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Start Screen -->
+  <div id="startScreen" class="screen">
+    <h1>SPI漢字 語句の意味クイズ</h1>
+    <p class="subtitle">忘却曲線に沿った復習システム搭載（4択クイズ）</p>
+
+    <div class="dashboard">
+      <div class="dash-title">
+        <span>学習進捗</span>
+        <button class="ghost" id="resetBtn" style="padding:4px 10px; font-size:11px">履歴リセット</button>
+      </div>
+      <div class="dash-stats">
+        <div class="dash-cell"><div class="dash-num" id="statTotal">0</div><div class="dash-label">総語数</div></div>
+        <div class="dash-cell"><div class="dash-num due" id="statDue">0</div><div class="dash-label">本日復習</div></div>
+        <div class="dash-cell"><div class="dash-num new" id="statNew">0</div><div class="dash-label">未学習</div></div>
+        <div class="dash-cell"><div class="dash-num mastered" id="statMastered">0</div><div class="dash-label">習熟済み</div></div>
+      </div>
+      <div class="level-bars" id="levelBars"></div>
+      <div class="level-legend"><span>未学習</span><span>Lv.1(1日)</span><span>Lv.3(7日)</span><span>Lv.5(30日)</span><span>習熟</span></div>
+    </div>
+
+    <div class="setting">
+      <label>出題モード</label>
+      <div class="mode-options" id="modeOptions">
+        <button data-mode="srs" class="active">
+          <div class="mode-title">復習モード</div>
+          <div class="mode-sub">期日の来た語＋新出を優先出題</div>
+        </button>
+        <button data-mode="new">
+          <div class="mode-title">新出のみ</div>
+          <div class="mode-sub">未学習の語だけ出題</div>
+        </button>
+        <button data-mode="weak">
+          <div class="mode-title">苦手モード</div>
+          <div class="mode-sub">間違えた回数が多い順</div>
+        </button>
+        <button data-mode="random">
+          <div class="mode-title">ランダム</div>
+          <div class="mode-sub">履歴を無視してランダム</div>
+        </button>
+      </div>
+    </div>
+
+    <div class="setting">
+      <label>問題数</label>
+      <div class="count-options" id="countOptions">
+        <button data-count="10">10問</button>
+        <button data-count="20" class="active">20問</button>
+        <button data-count="30">30問</button>
+        <button data-count="50">50問</button>
+        <button data-count="100">100問</button>
+        <button data-count="all">全問</button>
+      </div>
+    </div>
+
+    <div class="setting">
+      <label>制限時間</label>
+      <div class="count-options" id="timerOptions">
+        <button data-sec="0">無制限</button>
+        <button data-sec="5">5秒</button>
+        <button data-sec="10" class="active">10秒</button>
+        <button data-sec="20">20秒</button>
+        <button data-sec="30">30秒</button>
+      </div>
+    </div>
+
+    <div class="dataset-info" id="dsInfo"></div>
+    <button class="primary" id="startBtn">スタート →</button>
+  </div>
+
+  <!-- Quiz Screen -->
+  <div id="quizScreen" class="screen" hidden>
+    <header>
+      <h1>クイズ</h1>
+      <button class="ghost" id="quitBtn">中止</button>
+    </header>
+    <div class="progress-info">
+      <span>Q <strong id="currentNum">1</strong> / <span id="totalNum">10</span></span>
+      <span>正解 <strong id="correctNum">0</strong> / 不正解 <strong id="wrongNum" style="color:#dc3545">0</strong></span>
+    </div>
+    <div class="history" id="history"></div>
+
+    <div class="timer-wrap" id="timerWrap" hidden>
+      <div class="timer-bar-bg"><div class="timer-bar" id="timerBar"></div></div>
+      <div class="timer-text" id="timerText">10</div>
+    </div>
+
+    <div class="question-area">
+      <div class="prompt">次の語句の意味として最も適切なものを選びなさい <span id="srsPill" class="srs-pill"></span></div>
+      <div class="word" id="word">―</div>
+      <div class="reading" id="reading">―</div>
+      <div class="next-review" id="nextReview"></div>
+    </div>
+
+    <div class="choices" id="choices"></div>
+    <div class="feedback" id="feedback"></div>
+
+    <div class="controls">
+      <button class="secondary" id="readingBtn">読み方</button>
+      <button class="primary" id="nextBtn" disabled>次の問題 →</button>
+    </div>
+  </div>
+
+  <!-- Result Screen -->
+  <div id="resultScreen" class="screen" hidden>
+    <h1>結果</h1>
+    <div class="final-score">
+      <div class="score-label">正答数</div>
+      <div class="score-big"><span id="finalCorrect">0</span> / <span id="finalTotal">0</span></div>
+      <div class="score-rate">正答率 <span id="finalRate">0</span>%</div>
+    </div>
+    <div class="history large" id="resultHistory"></div>
+    <div class="review">
+      <h2>間違えた問題の復習</h2>
+      <div id="reviewArea"></div>
+    </div>
+    <div class="controls" style="margin-top:20px">
+      <button class="secondary" id="backBtn">最初に戻る</button>
+      <button class="primary" id="retryBtn">同じ設定でもう一度 →</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const DATA = [
+  // ==== 原典SPI問題集（126問ベース）====
+  {w:"卒読",r:"そつどく",m:"ひととおり読む"},
+  {w:"耽読",r:"たんどく",m:"夢中で読みふける"},
+  {w:"熟読",r:"じゅくどく",m:"じっくりと読む"},
+  {w:"精読",r:"せいどく",m:"詳しく読む"},
+  {w:"判読",r:"はんどく",m:"読み解く"},
+  {w:"一笑",r:"いっしょう",m:"ひと笑い"},
+  {w:"嘲笑",r:"ちょうしょう",m:"あざ笑う"},
+  {w:"苦笑",r:"くしょう",m:"苦い笑い"},
+  {w:"哄笑",r:"こうしょう",m:"大声で笑う"},
+  {w:"失笑",r:"しっしょう",m:"思わず笑う"},
+  {w:"一抹",r:"いちまつ",m:"ほんの少し"},
+  {w:"一縷",r:"いちる",m:"ごくわずか"},
+  {w:"朦朧",r:"もうろう",m:"ぼんやりしている"},
+  {w:"煌煌",r:"こうこう",m:"光り輝くさま"},
+  {w:"滔滔",r:"とうとう",m:"よどみなく流れる"},
+  {w:"歴歴",r:"れきれき",m:"はっきり明瞭"},
+  {w:"蜿蜒",r:"えんえん",m:"長く続くさま"},
+  {w:"反駁",r:"はんばく",m:"言い返し論じ返す"},
+  {w:"反論",r:"はんろん",m:"反対意見を述べる"},
+  {w:"抗議",r:"こうぎ",m:"反対を申し立てる"},
+  {w:"口論",r:"こうろん",m:"言い争い"},
+  {w:"論破",r:"ろんぱ",m:"言い負かす"},
+  {w:"跳梁",r:"ちょうりょう",m:"勝手にはねまわる"},
+  {w:"跳躍",r:"ちょうやく",m:"とびはねる"},
+  {w:"躍如",r:"やくじょ",m:"いきいきとした様子"},
+  {w:"躍動",r:"やくどう",m:"生き生きと動く"},
+  {w:"躍起",r:"やっき",m:"むきになる"},
+  {w:"諫言",r:"かんげん",m:"いさめて言う"},
+  {w:"至言",r:"しげん",m:"真理を突いた言葉"},
+  {w:"直言",r:"ちょくげん",m:"遠慮せず言う"},
+  {w:"極言",r:"きょくげん",m:"極端な言い方"},
+  {w:"進言",r:"しんげん",m:"意見を申し述べる"},
+  {w:"軽減",r:"けいげん",m:"負担を軽くする"},
+  {w:"加減",r:"かげん",m:"調整する"},
+  {w:"逓減",r:"ていげん",m:"しだいに減る"},
+  {w:"削減",r:"さくげん",m:"削り減らす"},
+  {w:"微減",r:"びげん",m:"少し減る"},
+  {w:"尊大",r:"そんだい",m:"えらそうな態度"},
+  {w:"横柄",r:"おうへい",m:"無礼で威張る"},
+  {w:"居丈高",r:"いたけだか",m:"威圧的な態度"},
+  {w:"鉄面皮",r:"てつめんぴ",m:"厚かましい"},
+  {w:"傲岸",r:"ごうがん",m:"おごり高ぶる"},
+  {w:"洞察",r:"どうさつ",m:"物事を見抜く"},
+  {w:"明察",r:"めいさつ",m:"はっきり見通す"},
+  {w:"推定",r:"すいてい",m:"推し量って定める"},
+  {w:"配慮",r:"はいりょ",m:"心配り"},
+  {w:"忖度",r:"そんたく",m:"心中をおしはかる"},
+  {w:"崩壊",r:"ほうかい",m:"崩れこわれる"},
+  {w:"瓦解",r:"がかい",m:"組織が崩れる"},
+  {w:"曲解",r:"きょっかい",m:"ゆがめて解釈する"},
+  {w:"破壊",r:"はかい",m:"こわすこと"},
+  {w:"壊滅",r:"かいめつ",m:"完全に滅ぶ"},
+  {w:"呈する",r:"ていする",m:"差し出す"},
+  {w:"類する",r:"るいする",m:"似ている"},
+  {w:"値する",r:"あたいする",m:"ふさわしい"},
+  {w:"伍する",r:"ごする",m:"肩を並べる"},
+  {w:"位する",r:"いする",m:"位置する"},
+  {w:"復唱",r:"ふくしょう",m:"繰り返し言う"},
+  {w:"銘記",r:"めいき",m:"心に刻む"},
+  {w:"暗記",r:"あんき",m:"覚え込む"},
+  {w:"奇策",r:"きさく",m:"思いがけない策"},
+  {w:"秘策",r:"ひさく",m:"秘密の策略"},
+  {w:"策略",r:"さくりゃく",m:"はかりごと"},
+  {w:"策士",r:"さくし",m:"策を弄する人"},
+  {w:"腐心",r:"ふしん",m:"心を砕く"},
+  {w:"専念",r:"せんねん",m:"一つに打ち込む"},
+  {w:"集中",r:"しゅうちゅう",m:"一点に注ぐ"},
+  {w:"傾注",r:"けいちゅう",m:"精力を注ぐ"},
+  {w:"没頭",r:"ぼっとう",m:"熱中する"},
+  {w:"養子",r:"ようし",m:"もらい子"},
+  {w:"継子",r:"ままこ",m:"血のつながらぬ子"},
+  {w:"里子",r:"さとご",m:"預けられた子"},
+  {w:"嗣子",r:"しし",m:"あとつぎ"},
+  {w:"驕慢",r:"きょうまん",m:"おごり高ぶる"},
+  {w:"高慢",r:"こうまん",m:"自分をえらぶる"},
+  {w:"自慢",r:"じまん",m:"ほこる"},
+  {w:"傲慢",r:"ごうまん",m:"おごりたかぶる"},
+  {w:"擁護",r:"ようご",m:"かばい守る"},
+  {w:"看護",r:"かんご",m:"世話をする"},
+  {w:"信用",r:"しんよう",m:"信じること"},
+  {w:"的中",r:"てきちゅう",m:"的に当たる"},
+  {w:"認証",r:"にんしょう",m:"認めて証明する"},
+  {w:"老練",r:"ろうれん",m:"経験豊富で巧み"},
+  {w:"老熟",r:"ろうじゅく",m:"円熟した技"},
+  {w:"熟成",r:"じゅくせい",m:"十分に熟する"},
+  {w:"成熟",r:"せいじゅく",m:"十分に発達する"},
+  {w:"威信",r:"いしん",m:"威厳と信望"},
+  {w:"威権",r:"いけん",m:"威光と権力"},
+  {w:"威儀",r:"いぎ",m:"礼儀正しい態度"},
+  {w:"威厳",r:"いげん",m:"おごそかで重々しい"},
+  {w:"威容",r:"いよう",m:"堂々たる姿"},
+  {w:"奮起",r:"ふんき",m:"気力を奮い起こす"},
+  {w:"鼓舞",r:"こぶ",m:"はげまし元気づける"},
+  {w:"感奮",r:"かんぷん",m:"感じて奮い立つ"},
+  {w:"概要",r:"がいよう",m:"大すじ"},
+  {w:"風格",r:"ふうかく",m:"品位・おもむき"},
+  {w:"貫禄",r:"かんろく",m:"威厳"},
+  {w:"威風",r:"いふう",m:"威厳ある態度"},
+  {w:"風貌",r:"ふうぼう",m:"顔つきと姿"},
+  {w:"合弁",r:"ごうべん",m:"共同経営"},
+  {w:"差別",r:"さべつ",m:"違いをつける"},
+  {w:"区別",r:"くべつ",m:"分けること"},
+  {w:"平等",r:"びょうどう",m:"同じ扱い"},
+  {w:"均等",r:"きんとう",m:"等しいこと"},
+  {w:"転変",r:"てんぺん",m:"移り変わり"},
+  {w:"沿革",r:"えんかく",m:"移り変わり・歴史"},
+  {w:"急変",r:"きゅうへん",m:"急な変化"},
+  {w:"変転",r:"へんてん",m:"移り変わる"},
+  {w:"不変",r:"ふへん",m:"変わらない"},
+  {w:"熟知",r:"じゅくち",m:"よく知っている"},
+  {w:"周知",r:"しゅうち",m:"広く知れ渡る"},
+  {w:"承知",r:"しょうち",m:"聞き入れる"},
+  {w:"通暁",r:"つうぎょう",m:"詳しく知り抜く"},
+  {w:"健全",r:"けんぜん",m:"健康で良好"},
+  {w:"気丈",r:"きじょう",m:"気が強い"},
+  {w:"鍛錬",r:"たんれん",m:"心身を鍛える"},
+  {w:"激怒",r:"げきど",m:"激しく怒る"},
+  {w:"憤怒",r:"ふんぬ",m:"激しく怒る"},
+  {w:"怒気",r:"どき",m:"怒りの気持ち"},
+  {w:"目溢し",r:"めこぼし",m:"見逃すこと"},
+  {w:"目白押し",r:"めじろおし",m:"混雑する"},
+  {w:"目くばせ",r:"めくばせ",m:"目で合図する"},
+  {w:"職責",r:"しょくせき",m:"職務上の責任"},
+  {w:"進退",r:"しんたい",m:"身の処し方"},
+  {w:"出世",r:"しゅっせ",m:"地位があがる"},
+  {w:"任命",r:"にんめい",m:"職に任ずる"},
+  {w:"明白",r:"めいはく",m:"はっきりしている"},
+  {w:"率直",r:"そっちょく",m:"ありのまま"},
+  {w:"明瞭",r:"めいりょう",m:"はっきり明らか"},
+  {w:"明快",r:"めいかい",m:"わかりやすい"},
+  {w:"簡明",r:"かんめい",m:"簡単で明瞭"},
+  {w:"青天井",r:"あおてんじょう",m:"限りない"},
+  {w:"有頂天",r:"うちょうてん",m:"大得意"},
+  {w:"絶体絶命",r:"ぜったいぜつめい",m:"窮地に立つ"},
+  {w:"研修",r:"けんしゅう",m:"学んで修める"},
+  {w:"研鑽",r:"けんさん",m:"深く究める"},
+  {w:"研究",r:"けんきゅう",m:"深く調べる"},
+  {w:"研磨",r:"けんま",m:"磨き上げる"},
+  {w:"碩学",r:"せきがく",m:"学問を究めた人"},
+  {w:"気骨",r:"きこつ",m:"気概"},
+  {w:"気質",r:"きしつ",m:"性質"},
+  {w:"愛嬌",r:"あいきょう",m:"かわいらしさ"},
+  {w:"気概",r:"きがい",m:"強い意気"},
+  {w:"権威",r:"けんい",m:"その道の最高"},
+  {w:"草分け",r:"くさわけ",m:"先駆者"},
+  {w:"大立者",r:"おおだてもの",m:"中心人物"},
+  {w:"要点",r:"ようてん",m:"大事な点"},
+  {w:"争点",r:"そうてん",m:"争いの中心"},
+  {w:"大筋",r:"おおすじ",m:"あらまし"},
+  {w:"大局",r:"たいきょく",m:"全体の動き"},
+  {w:"本筋",r:"ほんすじ",m:"本来の筋道"},
+  {w:"経世",r:"けいせい",m:"世を治める"},
+  {w:"経営",r:"けいえい",m:"事業を営む"},
+  {w:"家計",r:"かけい",m:"家の経済状況"},
+  {w:"生計",r:"せいけい",m:"暮らしの手段"},
+  {w:"始終",r:"しじゅう",m:"始めから終わりまで"},
+  {w:"早晩",r:"そうばん",m:"遅かれ早かれ"},
+  {w:"通則",r:"つうそく",m:"一般的な規則"},
+  {w:"始末",r:"しまつ",m:"処理"},
+  {w:"常時",r:"じょうじ",m:"いつも"},
+  {w:"滑稽",r:"こっけい",m:"おかしみ"},
+  {w:"滑落",r:"かつらく",m:"すべり落ちる"},
+  {w:"滑走",r:"かっそう",m:"すべり動く"},
+  {w:"聡明",r:"そうめい",m:"かしこい"},
+  {w:"一石二鳥",r:"いっせきにちょう",m:"一度に二つの利益"},
+  {w:"一挙一動",r:"いっきょいちどう",m:"一つ一つの動作"},
+  {w:"一気呵成",r:"いっきかせい",m:"一気に仕上げる"},
+  {w:"安息",r:"あんそく",m:"楽にやすむ"},
+  {w:"休憩",r:"きゅうけい",m:"仕事を休む"},
+  {w:"遊惰",r:"ゆうだ",m:"あそびなまける"},
+  {w:"遊楽",r:"ゆうらく",m:"遊び楽しむ"},
+  {w:"怠惰",r:"たいだ",m:"なまけて怠る"},
+  {w:"気後れ",r:"きおくれ",m:"ひるむ"},
+  {w:"二の足を踏む",r:"にのあしをふむ",m:"ためらう"},
+  {w:"浮き足立つ",r:"うきあしだつ",m:"そわそわする"},
+  {w:"安楽",r:"あんらく",m:"安らかで楽"},
+  {w:"安穏",r:"あんのん",m:"無事で穏やか"},
+  {w:"安泰",r:"あんたい",m:"無事で安らか"},
+  {w:"安閑",r:"あんかん",m:"のんびり"},
+  {w:"嫌疑",r:"けんぎ",m:"うたがい"},
+  {w:"疑問",r:"ぎもん",m:"うたがい問題"},
+  {w:"異議",r:"いぎ",m:"反対の意見"},
+  {w:"疑念",r:"ぎねん",m:"うたがいの気持ち"},
+  {w:"疑惑",r:"ぎわく",m:"うたがい"},
+  {w:"精励",r:"せいれい",m:"心を込め励む"},
+  {w:"勉励",r:"べんれい",m:"つとめ励む"},
+  {w:"勤勉",r:"きんべん",m:"まじめに励む"},
+  {w:"決裁",r:"けっさい",m:"決定する"},
+  {w:"査定",r:"さてい",m:"調査し決める"},
+  {w:"評定",r:"ひょうてい",m:"評価して定める"},
+  {w:"裁量",r:"さいりょう",m:"自分で判断する"},
+  {w:"制定",r:"せいてい",m:"きまりを定める"},
+  {w:"披露",r:"ひろう",m:"広く知らせる"},
+  {w:"告白",r:"こくはく",m:"打ち明ける"},
+  {w:"供述",r:"きょうじゅつ",m:"述べる"},
+  {w:"白状",r:"はくじょう",m:"打ち明け告げる"},
+  {w:"道理",r:"どうり",m:"物事の筋道"},
+  {w:"羽振り",r:"はぶり",m:"威勢"},
+  {w:"充満",r:"じゅうまん",m:"満ち満ちる"},
+  {w:"経路",r:"けいろ",m:"通った道"},
+  {w:"顛末",r:"てんまつ",m:"事の始末"},
+  {w:"結末",r:"けつまつ",m:"終わり"},
+  {w:"仔細",r:"しさい",m:"詳しい事情"},
+  {w:"概略",r:"がいりゃく",m:"おおよそ"},
+  {w:"等分",r:"とうぶん",m:"等しく分ける"},
+  {w:"応分",r:"おうぶん",m:"身分相応"},
+  {w:"山分け",r:"やまわけ",m:"等しく分配"},
+  {w:"均分",r:"きんぶん",m:"等しく分ける"},
+  {w:"折半",r:"せっぱん",m:"半分に分ける"},
+  {w:"能弁",r:"のうべん",m:"よく話す"},
+  {w:"雄弁",r:"ゆうべん",m:"説得力ある話"},
+  {w:"達弁",r:"たつべん",m:"弁が立つ"},
+  {w:"多弁",r:"たべん",m:"よくしゃべる"},
+  {w:"親書",r:"しんしょ",m:"自筆の手紙"},
+  {w:"内示",r:"ないじ",m:"内々に知らせる"},
+  {w:"内偵",r:"ないてい",m:"ひそかに探る"},
+  {w:"秘密",r:"ひみつ",m:"かくすこと"},
+  {w:"保留",r:"ほりゅう",m:"保ち留める"},
+  {w:"与する",r:"くみする",m:"味方する"},
+  {w:"介する",r:"かいする",m:"間に立てる"},
+  {w:"共謀",r:"きょうぼう",m:"共にたくらむ"},
+  {w:"加勢",r:"かせい",m:"力を貸す"},
+  {w:"連携",r:"れんけい",m:"連絡して行う"},
+  {w:"結託",r:"けったく",m:"悪事を共謀"},
+  {w:"参画",r:"さんかく",m:"計画に加わる"},
+  {w:"先駆ける",r:"さきがける",m:"先行する"},
+  {w:"知略",r:"ちりゃく",m:"賢い計略"},
+  {w:"計略",r:"けいりゃく",m:"はかりごと"},
+  {w:"機略",r:"きりゃく",m:"時に応じた計"},
+  {w:"画策",r:"かくさく",m:"計画する"},
+  {w:"善後策",r:"ぜんごさく",m:"後始末の手段"},
+  {w:"過分",r:"かぶん",m:"分に過ぎる"},
+  {w:"余分",r:"よぶん",m:"余り"},
+  {w:"役不足",r:"やくぶそく",m:"役が軽すぎる"},
+  {w:"倒産",r:"とうさん",m:"破産する"},
+  {w:"自滅",r:"じめつ",m:"自ら滅ぶ"},
+  {w:"失脚",r:"しっきゃく",m:"地位を失う"},
+  {w:"転落",r:"てんらく",m:"落ちぶれる"},
+  {w:"零落",r:"れいらく",m:"落ちぶれ果てる"},
+  {w:"順序",r:"じゅんじょ",m:"順番"},
+  {w:"系統",r:"けいとう",m:"筋道・つながり"},
+  {w:"主旨",r:"しゅし",m:"主な内容"},
+  {w:"号泣",r:"ごうきゅう",m:"大声で泣く"},
+  {w:"慟哭",r:"どうこく",m:"悲しみ声をあげ泣く"},
+  {w:"哀慕",r:"あいぼ",m:"悲しみ慕う"},
+  {w:"悲泣",r:"ひきゅう",m:"悲しみ泣く"},
+  {w:"泰然",r:"たいぜん",m:"落ち着き動じない"},
+  {w:"悠然",r:"ゆうぜん",m:"ゆったりしている"},
+  {w:"冷静",r:"れいせい",m:"落ち着いている"},
+  {w:"悠久",r:"ゆうきゅう",m:"長く久しい"},
+  {w:"俯瞰",r:"ふかん",m:"高所から見下ろす"},
+  {w:"展望",r:"てんぼう",m:"広く見渡す"},
+  {w:"鳥瞰",r:"ちょうかん",m:"空から見下ろす"},
+  {w:"観望",r:"かんぼう",m:"ながめる"},
+  {w:"遠望",r:"えんぼう",m:"遠くを見る"},
+  {w:"打診",r:"だしん",m:"意向をさぐる"},
+  {w:"病弱",r:"びょうじゃく",m:"病気がち"},
+  {w:"貧弱",r:"ひんじゃく",m:"貧しく弱い"},
+  {w:"軟弱",r:"なんじゃく",m:"弱々しい"},
+  {w:"虚弱",r:"きょじゃく",m:"体が弱い"},
+  {w:"脆弱",r:"ぜいじゃく",m:"もろくて弱い"},
+  {w:"個性",r:"こせい",m:"独特の性質"},
+  {w:"根性",r:"こんじょう",m:"気構え"},
+  {w:"性格",r:"せいかく",m:"人柄"},
+  {w:"相性",r:"あいしょう",m:"人との合い性"},
+  {w:"性分",r:"しょうぶん",m:"生まれつきの性質"},
+  {w:"会議",r:"かいぎ",m:"集まり議論する"},
+  {w:"審議",r:"しんぎ",m:"詳しく調べ議論"},
+  {w:"審査",r:"しんさ",m:"調べて決める"},
+  {w:"談判",r:"だんぱん",m:"話し合う"},
+  {w:"協議",r:"きょうぎ",m:"集まって相談"},
+  {w:"杜撰",r:"ずさん",m:"いいかげん"},
+  {w:"冗漫",r:"じょうまん",m:"だらだら長い"},
+  {w:"放漫",r:"ほうまん",m:"しまりがない"},
+  {w:"放逸",r:"ほういつ",m:"勝手気まま"},
+  {w:"和解",r:"わかい",m:"仲直りする"},
+  {w:"仲裁",r:"ちゅうさい",m:"争いを取り持つ"},
+  {w:"中立",r:"ちゅうりつ",m:"偏らない立場"},
+  {w:"停戦",r:"ていせん",m:"戦いを止める"},
+  {w:"調和",r:"ちょうわ",m:"うまく釣り合う"},
+  {w:"世情",r:"せじょう",m:"世間の事情"},
+  {w:"世俗",r:"せぞく",m:"世間一般"},
+  {w:"世相",r:"せそう",m:"世の中の様子"},
+  {w:"世態",r:"せたい",m:"世の中の状態"},
+  {w:"世評",r:"せひょう",m:"世間の評判"},
+  {w:"胸算用",r:"むなざんよう",m:"心の見積もり"},
+  {w:"皮算用",r:"かわざんよう",m:"捕らぬ狸の計算"},
+  {w:"心積もり",r:"こころづもり",m:"心の準備"},
+  {w:"詠嘆",r:"えいたん",m:"感動し嘆く"},
+  {w:"感嘆",r:"かんたん",m:"感心する"},
+  {w:"感服",r:"かんぷく",m:"感心して敬服"},
+  {w:"感激",r:"かんげき",m:"強く感動する"},
+  {w:"感銘",r:"かんめい",m:"深く感動する"},
+  {w:"軽蔑",r:"けいべつ",m:"見下す"},
+  {w:"侮蔑",r:"ぶべつ",m:"あなどる"},
+  {w:"凌辱",r:"りょうじょく",m:"辱める"},
+  {w:"侮辱",r:"ぶじょく",m:"はずかしめる"},
+  {w:"蔑視",r:"べっし",m:"見下すこと"},
+  {w:"心痛",r:"しんつう",m:"心の苦しみ"},
+  {w:"心労",r:"しんろう",m:"心づかい"},
+  {w:"怨恨",r:"えんこん",m:"うらみ"},
+  {w:"宿怨",r:"しゅくえん",m:"長年のうらみ"},
+  {w:"克己",r:"こっき",m:"自分に打ち克つ"},
+  {w:"倦怠",r:"けんたい",m:"あきてだるい"},
+  {w:"辞退",r:"じたい",m:"ことわる"},
+  {w:"辟易",r:"へきえき",m:"うんざりする"},
+  {w:"退屈",r:"たいくつ",m:"暇で飽きる"},
+  {w:"干渉",r:"かんしょう",m:"関係して口を出す"},
+  {w:"調停",r:"ちょうてい",m:"争いをやわらげる"},
+  {w:"仲介",r:"ちゅうかい",m:"間に立つ"},
+  {w:"介入",r:"かいにゅう",m:"関わり入る"},
+  {w:"見聞",r:"けんぶん",m:"見たり聞いたり"},
+  {w:"博識",r:"はくしき",m:"広く物知り"},
+  {w:"知己",r:"ちき",m:"理解者"},
+  {w:"広告",r:"こうこく",m:"広く告げる"},
+  {w:"示唆",r:"しさ",m:"それとなく示す"},
+  {w:"指示",r:"しじ",m:"指図する"},
+  {w:"明示",r:"めいじ",m:"はっきり示す"},
+  {w:"告示",r:"こくじ",m:"公に知らせる"},
+  {w:"保証",r:"ほしょう",m:"責任を負う"},
+  {w:"保障",r:"ほしょう",m:"権利などを守る"},
+  {w:"補填",r:"ほてん",m:"不足を補う"},
+  {w:"補完",r:"ほかん",m:"補い完全にする"},
+  {w:"補償",r:"ほしょう",m:"損失を償う"},
+  {w:"根幹",r:"こんかん",m:"根本と幹"},
+  {w:"骨子",r:"こっし",m:"物事の中心"},
+  {w:"骨格",r:"こっかく",m:"ほねぐみ"},
+  {w:"幹部",r:"かんぶ",m:"組織の中心人物"},
+  {w:"師範",r:"しはん",m:"手本・師匠"},
+  {w:"師匠",r:"ししょう",m:"先生"},
+  {w:"恩師",r:"おんし",m:"恩のある師"},
+  {w:"柱石",r:"ちゅうせき",m:"頼りとなる人"},
+  {w:"推薦",r:"すいせん",m:"人や物を推す"},
+  {w:"誘致",r:"ゆうち",m:"さそい招く"},
+  {w:"勧誘",r:"かんゆう",m:"さそい勧める"},
+  {w:"勧告",r:"かんこく",m:"勧め告げる"},
+  {w:"説諭",r:"せつゆ",m:"言い聞かせる"},
+  {w:"危ぶむ",r:"あやぶむ",m:"不安に思う"},
+  {w:"勘繰る",r:"かんぐる",m:"邪推する"},
+  {w:"訝る",r:"いぶかる",m:"疑わしく思う"},
+  {w:"蛮行",r:"ばんこう",m:"乱暴な行い"},
+  {w:"悪行",r:"あくぎょう",m:"悪い行い"},
+  {w:"愚行",r:"ぐこう",m:"おろかな行い"},
+  {w:"追悼",r:"ついとう",m:"死を悼む"},
+  {w:"敬慕",r:"けいぼ",m:"敬い慕う"},
+  {w:"追慕",r:"ついぼ",m:"後を慕う"},
+  {w:"遂行",r:"すいこう",m:"やり遂げる"},
+  {w:"連行",r:"れんこう",m:"連れて行く"},
+  {w:"流行",r:"りゅうこう",m:"はやる"},
+  {w:"合流",r:"ごうりゅう",m:"一つに合わさる"},
+  {w:"道連れ",r:"みちづれ",m:"一緒に行く仲間"},
+  {w:"謙遜",r:"けんそん",m:"へりくだる"},
+  {w:"謹厳",r:"きんげん",m:"つつしみ厳格"},
+  {w:"狼狽",r:"ろうばい",m:"あわてふためく"},
+  {w:"動揺",r:"どうよう",m:"揺れ動く"},
+  {w:"伝説",r:"でんせつ",m:"言い伝え"},
+  {w:"伝達",r:"でんたつ",m:"伝え届ける"},
+  {w:"伝播",r:"でんぱ",m:"次々に伝わる"},
+  {w:"評判",r:"ひょうばん",m:"世間の評価"},
+  {w:"利器",r:"りき",m:"便利な道具"},
+  {w:"大器",r:"たいき",m:"偉大な人物"},
+  {w:"雅量",r:"がりょう",m:"広く大きな心"},
+  {w:"器量",r:"きりょう",m:"才能・容姿"},
+  {w:"度量",r:"どりょう",m:"心の広さ"},
+  {w:"渇望",r:"かつぼう",m:"切に望む"},
+  {w:"熱望",r:"ねつぼう",m:"強く望む"},
+  {w:"切望",r:"せつぼう",m:"切に望む"},
+  {w:"射幸",r:"しゃこう",m:"偶然の成功を望む"},
+  {w:"山師",r:"やまし",m:"投機師"},
+  {w:"棚ぼた",r:"たなぼた",m:"思わぬ幸運"},
+  {w:"野心",r:"やしん",m:"大きな望み"},
+  {w:"付和雷同",r:"ふわらいどう",m:"むやみに同調"},
+  {w:"唯々諾々",r:"いいだくだく",m:"素直に従う"},
+  {w:"右往左往",r:"うおうさおう",m:"うろうろする"},
+  {w:"意志薄弱",r:"いしはくじゃく",m:"意志が弱い"},
+  {w:"困難",r:"こんなん",m:"難しい"},
+  {w:"難渋",r:"なんじゅう",m:"はかどらない"},
+  {w:"泥縄",r:"どろなわ",m:"泥縄式のやり方"},
+  {w:"転嫁",r:"てんか",m:"責任を他に負わせる"},
+  {w:"誇張",r:"こちょう",m:"大げさに言う"},
+  {w:"吹聴",r:"ふいちょう",m:"言いふらす"},
+  {w:"敷衍",r:"ふえん",m:"押し広めて説明"},
+  {w:"宣伝",r:"せんでん",m:"広く知らせる"},
+  {w:"布教",r:"ふきょう",m:"教えを広める"},
+  {w:"解説",r:"かいせつ",m:"わかりやすく説明"},
+  {w:"克服",r:"こくふく",m:"困難に打ち勝つ"},
+  {w:"偏見",r:"へんけん",m:"偏った見方"},
+  {w:"過食",r:"かしょく",m:"食べすぎ"},
+  {w:"偏食",r:"へんしょく",m:"食の偏り"},
+  {w:"意匠",r:"いしょう",m:"デザイン・工夫"},
+  {w:"構想",r:"こうそう",m:"着想"},
+  {w:"着想",r:"ちゃくそう",m:"思いつき"},
+  {w:"算段",r:"さんだん",m:"工夫して整える"},
+  {w:"ひたむき",r:"ひたむき",m:"一途に打ち込む"},
+  {w:"そらんずる",r:"そらんずる",m:"暗記して唱える"},
+  {w:"くちずさむ",r:"くちずさむ",m:"歌を口に出す"},
+  {w:"ささやか",r:"ささやか",m:"つつましい"},
+  {w:"つましい",r:"つましい",m:"質素な"},
+  {w:"やおら",r:"やおら",m:"おもむろに"},
+  {w:"たじろぐ",r:"たじろぐ",m:"ひるむ"},
+  {w:"おじけづく",r:"おじけづく",m:"恐怖で気がひける"},
+  {w:"いそしむ",r:"いそしむ",m:"励む"},
+  {w:"はばかる",r:"はばかる",m:"遠慮する"},
+  {w:"たゆむ",r:"たゆむ",m:"ゆるむ"},
+  {w:"たしなむ",r:"たしなむ",m:"好んで親しむ"},
+  {w:"ことほぐ",r:"ことほぐ",m:"祝いを述べる"},
+  {w:"へつらう",r:"へつらう",m:"おもねる"},
+  {w:"たまわる",r:"たまわる",m:"いただく"},
+  {w:"けたたましい",r:"けたたましい",m:"突然の騒がしさ"},
+  {w:"かしましい",r:"かしましい",m:"やかましい"},
+  {w:"さもしい",r:"さもしい",m:"いやしい"},
+  {w:"がめつい",r:"がめつい",m:"欲深い"},
+  {w:"はしたない",r:"はしたない",m:"下品"},
+  {w:"おぼつかない",r:"おぼつかない",m:"不安・心もとない"},
+  {w:"ふがいない",r:"ふがいない",m:"情けない"},
+  {w:"ぎこちない",r:"ぎこちない",m:"不自然"},
+  {w:"おいそれと",r:"おいそれと",m:"すぐに簡単に"},
+  {w:"そそくさと",r:"そそくさと",m:"あわただしく"},
+  {w:"おめおめと",r:"おめおめと",m:"恥を忍んで"},
+  {w:"ぬけぬけと",r:"ぬけぬけと",m:"厚かましく"},
+  {w:"いみじくも",r:"いみじくも",m:"適切にも"},
+  {w:"いやしくも",r:"いやしくも",m:"仮にも"},
+  {w:"くしくも",r:"くしくも",m:"不思議にも"},
+  {w:"はしなくも",r:"はしなくも",m:"思いがけず"},
+  {w:"からくも",r:"からくも",m:"かろうじて"},
+
+  // ==== SPIで頻出の追加語彙 ====
+  // ---- 四字熟語 ----
+  {w:"温故知新",r:"おんこちしん",m:"古きを学び新を知る"},
+  {w:"臨機応変",r:"りんきおうへん",m:"状況に応じて対処"},
+  {w:"切磋琢磨",r:"せっさたくま",m:"互いに磨き高める"},
+  {w:"臥薪嘗胆",r:"がしんしょうたん",m:"苦労して目的達成"},
+  {w:"自画自賛",r:"じがじさん",m:"自分で自分をほめる"},
+  {w:"起承転結",r:"きしょうてんけつ",m:"文章の構成"},
+  {w:"大同小異",r:"だいどうしょうい",m:"ほぼ同じ"},
+  {w:"一朝一夕",r:"いっちょういっせき",m:"わずかの時間"},
+  {w:"日進月歩",r:"にっしんげっぽ",m:"絶えず進歩する"},
+  {w:"自業自得",r:"じごうじとく",m:"自分の行いの報い"},
+  {w:"因果応報",r:"いんがおうほう",m:"行いに報いがある"},
+  {w:"千載一遇",r:"せんざいいちぐう",m:"めったにない機会"},
+  {w:"疑心暗鬼",r:"ぎしんあんき",m:"疑えば怖く見える"},
+  {w:"一期一会",r:"いちごいちえ",m:"一生に一度の機会"},
+  {w:"言語道断",r:"ごんごどうだん",m:"もってのほか"},
+  {w:"傍若無人",r:"ぼうじゃくぶじん",m:"わがまま勝手"},
+  {w:"危機一髪",r:"ききいっぱつ",m:"きわどい危険"},
+  {w:"意気投合",r:"いきとうごう",m:"気が合う"},
+  {w:"公明正大",r:"こうめいせいだい",m:"公平で正しい"},
+  {w:"四面楚歌",r:"しめんそか",m:"周囲が全て敵"},
+  {w:"朝令暮改",r:"ちょうれいぼかい",m:"命令が頻繁に変わる"},
+  {w:"羊頭狗肉",r:"ようとうくにく",m:"見せかけだけ"},
+  {w:"画竜点睛",r:"がりょうてんせい",m:"最後の仕上げ"},
+  {w:"五里霧中",r:"ごりむちゅう",m:"見通しが立たない"},
+  {w:"針小棒大",r:"しんしょうぼうだい",m:"大げさに言う"},
+  {w:"我田引水",r:"がでんいんすい",m:"自分に都合よく"},
+  {w:"栄枯盛衰",r:"えいこせいすい",m:"栄えては衰える"},
+  {w:"竜頭蛇尾",r:"りゅうとうだび",m:"初め盛んで後貧弱"},
+  {w:"一網打尽",r:"いちもうだじん",m:"一度に全部捕える"},
+  {w:"縦横無尽",r:"じゅうおうむじん",m:"自由自在"},
+  {w:"単刀直入",r:"たんとうちょくにゅう",m:"いきなり核心"},
+  {w:"異口同音",r:"いくどうおん",m:"多人が同じ意見"},
+  {w:"馬耳東風",r:"ばじとうふう",m:"聞き流す"},
+  {w:"優柔不断",r:"ゆうじゅうふだん",m:"決断できない"},
+  {w:"森羅万象",r:"しんらばんしょう",m:"宇宙全ての事象"},
+  {w:"清廉潔白",r:"せいれんけっぱく",m:"心が清く正しい"},
+  {w:"虚心坦懐",r:"きょしんたんかい",m:"わだかまりがない"},
+  {w:"快刀乱麻",r:"かいとうらんま",m:"複雑な問題を解決"},
+  {w:"悪戦苦闘",r:"あくせんくとう",m:"苦しい戦い"},
+  {w:"臥竜鳳雛",r:"がりょうほうすう",m:"優れた未登場人材"},
+
+  // ---- 同音異義語 ----
+  {w:"意志",r:"いし",m:"物事を行う気持ち"},
+  {w:"意思",r:"いし",m:"考え・思い"},
+  {w:"遺志",r:"いし",m:"故人の生前の志"},
+  {w:"関心",r:"かんしん",m:"興味を持つこと"},
+  {w:"感心",r:"かんしん",m:"立派だと思う"},
+  {w:"歓心",r:"かんしん",m:"うれしく思う心"},
+  {w:"寒心",r:"かんしん",m:"ぞっとする"},
+  {w:"追求",r:"ついきゅう",m:"追い求める"},
+  {w:"追及",r:"ついきゅう",m:"厳しく問い詰める"},
+  {w:"追究",r:"ついきゅう",m:"深く究める"},
+  {w:"対象",r:"たいしょう",m:"目標物・相手"},
+  {w:"対称",r:"たいしょう",m:"釣り合い"},
+  {w:"対照",r:"たいしょう",m:"比べ合わせる"},
+  {w:"収集",r:"しゅうしゅう",m:"集めること"},
+  {w:"収拾",r:"しゅうしゅう",m:"混乱を収める"},
+  {w:"異常",r:"いじょう",m:"普通と違う"},
+  {w:"異状",r:"いじょう",m:"通常でない状態"},
+  {w:"好意",r:"こうい",m:"好ましく思う気持ち"},
+  {w:"厚意",r:"こうい",m:"思いやりの心"},
+  {w:"回答",r:"かいとう",m:"質問への返事"},
+  {w:"解答",r:"かいとう",m:"問題の答え"},
+  {w:"保健",r:"ほけん",m:"健康を保つ"},
+  {w:"保険",r:"ほけん",m:"損害への備え"},
+  {w:"精算",r:"せいさん",m:"詳細に計算する"},
+  {w:"清算",r:"せいさん",m:"貸借を整理する"},
+  {w:"成算",r:"せいさん",m:"成功の見込み"},
+
+  // ---- 対義語・類義語 ----
+  {w:"抽象",r:"ちゅうしょう",m:"共通性を取り出す"},
+  {w:"具象",r:"ぐしょう",m:"具体的な形"},
+  {w:"主観",r:"しゅかん",m:"自分の見方"},
+  {w:"客観",r:"きゃっかん",m:"第三者の見方"},
+  {w:"絶対",r:"ぜったい",m:"他と比較しない"},
+  {w:"相対",r:"そうたい",m:"他と比べての関係"},
+  {w:"需要",r:"じゅよう",m:"求める側"},
+  {w:"供給",r:"きょうきゅう",m:"与える側"},
+  {w:"過激",r:"かげき",m:"激しすぎる"},
+  {w:"穏健",r:"おんけん",m:"おだやか"},
+  {w:"拡大",r:"かくだい",m:"広げること"},
+  {w:"縮小",r:"しゅくしょう",m:"縮めること"},
+  {w:"必然",r:"ひつぜん",m:"必ずそうなる"},
+  {w:"偶然",r:"ぐうぜん",m:"思いがけず"},
+  {w:"保守",r:"ほしゅ",m:"旧来を守る"},
+  {w:"革新",r:"かくしん",m:"新しく改める"},
+  {w:"慇懃",r:"いんぎん",m:"とても丁寧"},
+  {w:"倹約",r:"けんやく",m:"無駄を省く"},
+  {w:"堅実",r:"けんじつ",m:"確かで手堅い"},
+  {w:"寛容",r:"かんよう",m:"心が広い"},
+  {w:"厳粛",r:"げんしゅく",m:"おごそかである"},
+  {w:"敬虔",r:"けいけん",m:"うやまい慎む"},
+  {w:"真摯",r:"しんし",m:"まじめで熱心"},
+  {w:"凡庸",r:"ぼんよう",m:"平凡なこと"},
+  {w:"怠慢",r:"たいまん",m:"なまけること"},
+  {w:"堅牢",r:"けんろう",m:"堅くて丈夫"},
+
+  // ---- 難読・頻出単独語 ----
+  {w:"更迭",r:"こうてつ",m:"役目を替える"},
+  {w:"罷免",r:"ひめん",m:"職を辞めさせる"},
+  {w:"斟酌",r:"しんしゃく",m:"事情を考慮する"},
+  {w:"鷹揚",r:"おうよう",m:"ゆったり上品"},
+  {w:"頓挫",r:"とんざ",m:"中途で挫折"},
+  {w:"喚起",r:"かんき",m:"呼び起こす"},
+  {w:"粉飾",r:"ふんしょく",m:"飾り立てる"},
+  {w:"標榜",r:"ひょうぼう",m:"主義を掲げる"},
+  {w:"頑迷",r:"がんめい",m:"かたくなで融通きかず"},
+  {w:"払拭",r:"ふっしょく",m:"払いのける"},
+  {w:"隆盛",r:"りゅうせい",m:"盛んになる"},
+  {w:"凋落",r:"ちょうらく",m:"衰え落ちぶれる"},
+  {w:"吝嗇",r:"りんしょく",m:"けちなこと"},
+  {w:"狭量",r:"きょうりょう",m:"心が狭い"},
+  {w:"逡巡",r:"しゅんじゅん",m:"ためらう"},
+  {w:"瞠目",r:"どうもく",m:"目をみはる"},
+  {w:"邁進",r:"まいしん",m:"突き進む"},
+  {w:"踏襲",r:"とうしゅう",m:"前例を受け継ぐ"},
+  {w:"披瀝",r:"ひれき",m:"心を打ち明ける"},
+  {w:"訃報",r:"ふほう",m:"死亡の知らせ"},
+  {w:"偏在",r:"へんざい",m:"偏って存在する"},
+  {w:"遍在",r:"へんざい",m:"広く行き渡る"},
+  {w:"喧伝",r:"けんでん",m:"言いふらす"},
+  {w:"毀誉褒貶",r:"きよほうへん",m:"批評とほめけなし"},
+  {w:"拘泥",r:"こうでい",m:"こだわる"},
+  {w:"辛辣",r:"しんらつ",m:"非常に厳しい"},
+  {w:"胡乱",r:"うろん",m:"怪しい・疑わしい"},
+  {w:"慚愧",r:"ざんき",m:"深く恥じ入る"},
+  {w:"示威",r:"じい",m:"威力を示す"},
+  {w:"流布",r:"るふ",m:"世に広まる"},
+  {w:"懸案",r:"けんあん",m:"未解決の問題"},
+  {w:"頑健",r:"がんけん",m:"頑丈で健康"},
+  {w:"卓越",r:"たくえつ",m:"群を抜いて優れる"},
+  {w:"潤沢",r:"じゅんたく",m:"豊富にある"},
+  {w:"払底",r:"ふってい",m:"ひどく不足"},
+  {w:"逼迫",r:"ひっぱく",m:"差し迫り苦しい"},
+  {w:"寡黙",r:"かもく",m:"口数が少ない"},
+  {w:"饒舌",r:"じょうぜつ",m:"おしゃべり"},
+  {w:"稀有",r:"けう",m:"めったにない"},
+  {w:"横溢",r:"おういつ",m:"満ちあふれる"},
+  {w:"頽廃",r:"たいはい",m:"すたれ乱れる"},
+  {w:"軋轢",r:"あつれき",m:"仲が悪くなる"},
+  {w:"破綻",r:"はたん",m:"行き詰まり破れる"},
+  {w:"汎用",r:"はんよう",m:"広く用いること"},
+  {w:"遺憾",r:"いかん",m:"思い通りにならず残念"},
+  {w:"淘汰",r:"とうた",m:"不要なものを除く"},
+  {w:"示唆に富む",r:"しさにとむ",m:"ヒントが多い"},
+  {w:"逆鱗",r:"げきりん",m:"目上の怒り"},
+  {w:"琴線",r:"きんせん",m:"心の奥の感情"},
+  {w:"端緒",r:"たんしょ",m:"物事の糸口"},
+  {w:"曖昧",r:"あいまい",m:"はっきりしない"},
+  {w:"折衝",r:"せっしょう",m:"利害の話し合い"},
+  {w:"束縛",r:"そくばく",m:"自由を縛る"},
+  {w:"矛盾",r:"むじゅん",m:"つじつまが合わない"},
+  {w:"軽率",r:"けいそつ",m:"よく考えず行動"},
+  {w:"慎重",r:"しんちょう",m:"よく考えて行動"},
+  {w:"謙虚",r:"けんきょ",m:"控えめで素直"},
+  {w:"傲慢",r:"ごうまん",m:"おごり高ぶる"},
+  {w:"遺漏",r:"いろう",m:"もれ落ち"},
+  {w:"喫緊",r:"きっきん",m:"さし迫って重要"},
+  {w:"危惧",r:"きぐ",m:"危ぶみ心配"},
+  {w:"憂慮",r:"ゆうりょ",m:"心配し考える"},
+  {w:"是認",r:"ぜにん",m:"よいと認める"},
+  {w:"否認",r:"ひにん",m:"認めないこと"},
+  {w:"肯定",r:"こうてい",m:"そうだと認める"},
+  {w:"否定",r:"ひてい",m:"そうでないとする"},
+  {w:"自負",r:"じふ",m:"自分に誇りを持つ"},
+  {w:"矜持",r:"きょうじ",m:"自尊心・誇り"},
+  {w:"軽挙",r:"けいきょ",m:"軽はずみな行動"},
+  {w:"寡占",r:"かせん",m:"少数で市場支配"},
+  {w:"独占",r:"どくせん",m:"独り占め"},
+  {w:"便宜",r:"べんぎ",m:"都合がよい"},
+  {w:"僥倖",r:"ぎょうこう",m:"思わぬ幸運"},
+  {w:"安堵",r:"あんど",m:"安心する"},
+  {w:"覚醒",r:"かくせい",m:"目覚める"},
+  {w:"遷延",r:"せんえん",m:"先延ばしになる"},
+  {w:"頓着",r:"とんちゃく",m:"気にかける"},
+  {w:"踏破",r:"とうは",m:"歩き通す"},
+  {w:"奇譚",r:"きたん",m:"不思議な話"},
+  {w:"随行",r:"ずいこう",m:"付き添い行く"},
+  {w:"便乗",r:"びんじょう",m:"機会に乗じる"},
+  {w:"牽制",r:"けんせい",m:"相手を抑える"},
+  {w:"遺恨",r:"いこん",m:"忘れがたいうらみ"},
+  {w:"示談",r:"じだん",m:"話し合いで解決"},
+  {w:"無碍",r:"むげ",m:"妨げがない"},
+  {w:"邂逅",r:"かいこう",m:"思いがけない出会い"},
+  {w:"寸暇",r:"すんか",m:"ほんの少しのひま"},
+  {w:"虚偽",r:"きょぎ",m:"うそ・いつわり"},
+  {w:"暫時",r:"ざんじ",m:"しばらくの間"},
+  {w:"漸次",r:"ぜんじ",m:"だんだんと"},
+  {w:"刻々",r:"こくこく",m:"時々刻々"},
+  {w:"仄聞",r:"そくぶん",m:"うわさに聞く"},
+  {w:"唯一",r:"ゆいいつ",m:"ただ一つ"},
+  {w:"機微",r:"きび",m:"表に出ない趣"},
+  {w:"遺徳",r:"いとく",m:"死後に残る徳"},
+  {w:"愚直",r:"ぐちょく",m:"ばか正直"},
+  {w:"率先",r:"そっせん",m:"真っ先に行う"},
+  {w:"黙認",r:"もくにん",m:"黙って認める"},
+  {w:"挽回",r:"ばんかい",m:"取り戻す"},
+  {w:"安閑",r:"あんかん",m:"気楽でのんき"},
+  {w:"悠長",r:"ゆうちょう",m:"のんびり落ち着く"}
+];
+
+// Dedup by w+r (in case of duplicates)
+const seen = new Set();
+const UNIQUE_DATA = DATA.filter(d => {
+  const k = d.w + "|" + d.r;
+  if (seen.has(k)) return false;
+  seen.add(k);
+  return true;
+});
+
+// ==== SRS (Spaced Repetition System) ====
+// 忘却曲線に基づくレベル別復習間隔（日数）
+const SRS_KEY = "spi_srs_v1";
+const INTERVALS_DAYS = [0, 1, 3, 7, 14, 30, 90];
+const MAX_LEVEL = 6;
+const DAY_MS = 86400000;
+
+function loadSRS() {
+  try { return JSON.parse(localStorage.getItem(SRS_KEY)) || {}; }
+  catch { return {}; }
+}
+function saveSRS(s) { localStorage.setItem(SRS_KEY, JSON.stringify(s)); }
+function keyOf(d) { return d.w + "|" + d.r; }
+function getRec(srs, d) {
+  return srs[keyOf(d)] || null;
+}
+function updateRec(srs, d, isCorrect) {
+  const cur = srs[keyOf(d)] || { level: 0, nextDue: 0, lastSeen: 0, correct: 0, wrong: 0 };
+  const now = Date.now();
+  if (isCorrect) {
+    cur.level = Math.min(cur.level + 1, MAX_LEVEL);
+    cur.correct++;
+  } else {
+    cur.level = Math.max(cur.level - 1, 0);
+    cur.wrong++;
+  }
+  cur.lastSeen = now;
+  cur.nextDue = now + INTERVALS_DAYS[cur.level] * DAY_MS;
+  srs[keyOf(d)] = cur;
+  saveSRS(srs);
+  return cur;
+}
+function nextIntervalLabel(level) {
+  const d = INTERVALS_DAYS[level];
+  if (d === 0) return "今すぐ";
+  if (d < 7) return `${d}日後`;
+  if (d < 30) return `${d}日後（${Math.round(d/7)}週間）`;
+  return `${d}日後（約${Math.round(d/30)}ヶ月）`;
+}
+
+function computeStats(srs) {
+  const now = Date.now();
+  const stats = { total: UNIQUE_DATA.length, learned: 0, due: 0, unlearned: 0, mastered: 0, byLevel: [0,0,0,0,0,0,0] };
+  UNIQUE_DATA.forEach(d => {
+    const r = srs[keyOf(d)];
+    if (!r) { stats.unlearned++; stats.byLevel[0]++; return; }
+    stats.learned++;
+    stats.byLevel[r.level]++;
+    if (r.nextDue <= now) stats.due++;
+    if (r.level >= 5) stats.mastered++;
+  });
+  return stats;
+}
+
+// Elements
+const $ = id => document.getElementById(id);
+const screens = { start: $("startScreen"), quiz: $("quizScreen"), result: $("resultScreen") };
+function show(name) {
+  Object.keys(screens).forEach(k => { screens[k].hidden = (k !== name); });
+}
+
+function renderDashboard() {
+  const srs = loadSRS();
+  const s = computeStats(srs);
+  $("statTotal").textContent = s.total;
+  $("statDue").textContent = s.due;
+  $("statNew").textContent = s.unlearned;
+  $("statMastered").textContent = s.mastered;
+  const $lb = $("levelBars");
+  $lb.innerHTML = "";
+  s.byLevel.forEach((count, lvl) => {
+    const bar = document.createElement("div");
+    bar.className = "level-bar";
+    bar.dataset.lvl = lvl;
+    bar.style.flex = Math.max(count, 0.5);
+    bar.title = `Lv.${lvl}: ${count}語`;
+    $lb.appendChild(bar);
+  });
+}
+
+// Start screen settings
+let selectedCount = 20;
+let selectedMode = "srs";
+let selectedSec = 10;
+
+const $countOptions = $("countOptions");
+$countOptions.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  [...$countOptions.children].forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  const c = btn.dataset.count;
+  selectedCount = c === "all" ? UNIQUE_DATA.length : parseInt(c, 10);
+});
+
+const $modeOptions = $("modeOptions");
+$modeOptions.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  [...$modeOptions.children].forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedMode = btn.dataset.mode;
+});
+
+const $timerOptions = $("timerOptions");
+$timerOptions.addEventListener("click", e => {
+  const btn = e.target.closest("button");
+  if (!btn) return;
+  [...$timerOptions.children].forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  selectedSec = parseInt(btn.dataset.sec, 10);
+});
+
+$("resetBtn").addEventListener("click", () => {
+  if (confirm("学習履歴をすべて削除します。よろしいですか？")) {
+    localStorage.removeItem(SRS_KEY);
+    renderDashboard();
+  }
+});
+
+$("dsInfo").textContent = `データセット: ${UNIQUE_DATA.length}語（SPI既出＋頻出語彙）`;
+renderDashboard();
+
+// Quiz state
+let state = null;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function pickQuestionQueue(mode, count) {
+  const srs = loadSRS();
+  const now = Date.now();
+  const withMeta = UNIQUE_DATA.map(d => ({ d, r: srs[keyOf(d)] }));
+
+  let pool;
+  if (mode === "srs") {
+    // 期日の来た語 → 未学習 → 残り
+    const due = withMeta.filter(x => x.r && x.r.nextDue <= now).map(x => x.d);
+    const newOnes = withMeta.filter(x => !x.r).map(x => x.d);
+    const rest = withMeta.filter(x => x.r && x.r.nextDue > now).map(x => x.d);
+    pool = [...shuffle(due), ...shuffle(newOnes), ...shuffle(rest)];
+  } else if (mode === "new") {
+    pool = shuffle(withMeta.filter(x => !x.r).map(x => x.d));
+    if (pool.length === 0) {
+      alert("新出の語がありません。別モードをお試しください。");
+      return null;
+    }
+  } else if (mode === "weak") {
+    const scored = withMeta
+      .filter(x => x.r && x.r.wrong > 0)
+      .sort((a,b) => b.r.wrong - a.r.wrong);
+    if (scored.length === 0) {
+      alert("間違えた履歴がありません。他モードで学習後にお試しください。");
+      return null;
+    }
+    pool = scored.map(x => x.d);
+  } else {
+    pool = shuffle(UNIQUE_DATA);
+  }
+
+  return pool.slice(0, Math.min(count, pool.length));
+}
+
+function startQuiz(count) {
+  const queue = pickQuestionQueue(selectedMode, count);
+  if (!queue || queue.length === 0) return;
+  state = {
+    total: queue.length,
+    queue,
+    idx: 0,
+    correct: 0,
+    wrong: 0,
+    history: [],
+    wrongList: [],
+    timerSec: selectedSec
+  };
+  renderHistoryCells();
+  $("totalNum").textContent = queue.length;
+  $("timerWrap").hidden = (selectedSec === 0);
+  show("quiz");
+  renderQuestion();
+}
+
+// Timer
+let timerTimeout = null;
+let timerInterval = null;
+
+function stopTimer() {
+  if (timerTimeout) { clearTimeout(timerTimeout); timerTimeout = null; }
+  if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
+}
+
+function startTimer(seconds) {
+  stopTimer();
+  if (seconds <= 0) return;
+  const totalMs = seconds * 1000;
+  const startT = Date.now();
+  const $bar = $("timerBar");
+  const $text = $("timerText");
+  $bar.classList.remove("warn", "danger");
+  $text.classList.remove("danger");
+  // reset width instantly
+  $bar.style.transition = "none";
+  $bar.style.width = "100%";
+  $text.textContent = seconds;
+  void $bar.offsetWidth; // reflow
+  $bar.style.transition = `width ${seconds}s linear`;
+  $bar.style.width = "0%";
+
+  timerInterval = setInterval(() => {
+    const elapsed = Date.now() - startT;
+    const remainMs = Math.max(0, totalMs - elapsed);
+    const ratio = remainMs / totalMs;
+    $text.textContent = Math.ceil(remainMs / 1000);
+    if (ratio < 0.33) { $bar.classList.add("danger"); $bar.classList.remove("warn"); $text.classList.add("danger"); }
+    else if (ratio < 0.66) { $bar.classList.add("warn"); }
+  }, 100);
+
+  timerTimeout = setTimeout(() => {
+    stopTimer();
+    handleTimeout();
+  }, totalMs);
+}
+
+function handleTimeout() {
+  const buttons = [...$("choices").querySelectorAll(".choice")];
+  if (buttons.length === 0 || buttons[0].disabled) return;
+  buttons.forEach((b, i) => {
+    b.disabled = true;
+    if (state.options[i].m === state.current.m) b.classList.add("correct");
+  });
+  // 不正解扱いでSRS更新
+  const srs = loadSRS();
+  const updated = updateRec(srs, state.current, false);
+  state.wrong++;
+  state.history.push("ng");
+  state.wrongList.push({
+    w: state.current.w,
+    r: state.current.r,
+    m: state.current.m,
+    picked: "（時間切れ）"
+  });
+  $("feedback").classList.add("show", "ng");
+  $("feedback").textContent = `時間切れ. 「${state.current.w}」(${state.current.r}) の意味は「${state.current.m}」`;
+  $("nextReview").textContent = `Lv.${updated.level} → 次回復習: ${nextIntervalLabel(updated.level)}`;
+  $("reading").classList.add("show");
+  $("correctNum").textContent = state.correct;
+  $("wrongNum").textContent = state.wrong;
+  $("nextBtn").disabled = false;
+  renderHistoryCells();
+}
+
+function renderHistoryCells() {
+  const $hist = $("history");
+  $hist.innerHTML = "";
+  for (let i = 0; i < state.total; i++) {
+    const c = document.createElement("div");
+    c.className = "cell";
+    if (state.history[i] === "ok") c.classList.add("ok");
+    else if (state.history[i] === "ng") c.classList.add("ng");
+    if (i === state.idx) c.classList.add("current");
+    $hist.appendChild(c);
+  }
+}
+
+function renderQuestion() {
+  const q = state.queue[state.idx];
+  state.current = q;
+  $("word").textContent = q.w;
+  $("reading").textContent = q.r;
+  $("reading").classList.remove("show");
+  $("currentNum").textContent = state.idx + 1;
+  $("correctNum").textContent = state.correct;
+  $("wrongNum").textContent = state.wrong;
+
+  // SRSレベル表示
+  const srs = loadSRS();
+  const rec = getRec(srs, q);
+  const $pill = $("srsPill");
+  if (!rec) {
+    $pill.textContent = "新出";
+    $pill.className = "srs-pill new";
+  } else {
+    $pill.textContent = `Lv.${rec.level}`;
+    $pill.className = "srs-pill lv";
+  }
+  $("nextReview").textContent = "";
+
+  // Distractors
+  const pool = UNIQUE_DATA.filter(d => d.m !== q.m);
+  const distractors = shuffle(pool).slice(0, 3);
+  const options = shuffle([q, ...distractors]);
+  state.options = options;
+
+  const $choices = $("choices");
+  $choices.innerHTML = "";
+  options.forEach((opt, i) => {
+    const btn = document.createElement("button");
+    btn.className = "choice";
+    btn.innerHTML = `<span class="label">${String.fromCharCode(65 + i)}</span>${opt.m}`;
+    btn.addEventListener("click", () => handleAnswer(btn, opt));
+    $choices.appendChild(btn);
+  });
+
+  $("feedback").classList.remove("show", "ok", "ng");
+  $("feedback").textContent = "";
+  $("nextBtn").disabled = true;
+  $("nextBtn").textContent = (state.idx === state.total - 1) ? "結果を見る →" : "次の問題 →";
+  renderHistoryCells();
+  startTimer(state.timerSec);
+}
+
+function handleAnswer(btn, chosen) {
+  stopTimer();
+  const buttons = [...$("choices").querySelectorAll(".choice")];
+  buttons.forEach((b, i) => {
+    b.disabled = true;
+    if (state.options[i].m === state.current.m) b.classList.add("correct");
+  });
+
+  const isCorrect = chosen.m === state.current.m;
+
+  // SRS更新
+  const srs = loadSRS();
+  const updated = updateRec(srs, state.current, isCorrect);
+
+  if (isCorrect) {
+    state.correct++;
+    state.history.push("ok");
+    $("feedback").classList.add("show", "ok");
+    $("feedback").textContent = `正解! 「${state.current.w}」(${state.current.r}) — ${state.current.m}`;
+  } else {
+    state.wrong++;
+    state.history.push("ng");
+    state.wrongList.push({
+      w: state.current.w,
+      r: state.current.r,
+      m: state.current.m,
+      picked: chosen.m
+    });
+    btn.classList.add("wrong");
+    $("feedback").classList.add("show", "ng");
+    $("feedback").textContent = `不正解. 「${state.current.w}」(${state.current.r}) の意味は「${state.current.m}」`;
+  }
+
+  $("nextReview").textContent = `Lv.${updated.level} → 次回復習: ${nextIntervalLabel(updated.level)}`;
+  $("reading").classList.add("show");
+  $("correctNum").textContent = state.correct;
+  $("wrongNum").textContent = state.wrong;
+  $("nextBtn").disabled = false;
+  renderHistoryCells();
+}
+
+function nextOrFinish() {
+  stopTimer();
+  state.idx++;
+  if (state.idx >= state.total) {
+    showResult();
+  } else {
+    renderQuestion();
+  }
+}
+
+function showResult() {
+  $("finalCorrect").textContent = state.correct;
+  $("finalTotal").textContent = state.total;
+  $("finalRate").textContent = Math.round(100 * state.correct / state.total);
+
+  const $rh = $("resultHistory");
+  $rh.innerHTML = "";
+  state.history.forEach(h => {
+    const c = document.createElement("div");
+    c.className = "cell " + h;
+    $rh.appendChild(c);
+  });
+
+  const $review = $("reviewArea");
+  $review.innerHTML = "";
+  if (state.wrongList.length === 0) {
+    $review.innerHTML = '<div class="allgood">全問正解! 素晴らしい</div>';
+  } else {
+    const ul = document.createElement("ul");
+    state.wrongList.forEach(w => {
+      const li = document.createElement("li");
+      li.innerHTML = `
+        <span class="rw">${w.w}</span><span class="rr">(${w.r})</span>
+        <div class="rm">正: ${w.m}</div>
+        <div class="rpick">あなたの回答: ${w.picked}</div>
+      `;
+      ul.appendChild(li);
+    });
+    $review.appendChild(ul);
+  }
+  show("result");
+}
+
+// Event bindings
+$("startBtn").addEventListener("click", () => startQuiz(selectedCount));
+$("nextBtn").addEventListener("click", nextOrFinish);
+$("readingBtn").addEventListener("click", () => {
+  $("reading").classList.toggle("show");
+});
+$("quitBtn").addEventListener("click", () => {
+  if (confirm("クイズを中止して最初に戻りますか?")) { stopTimer(); renderDashboard(); show("start"); }
+});
+$("retryBtn").addEventListener("click", () => startQuiz(state.total));
+$("backBtn").addEventListener("click", () => { renderDashboard(); show("start"); });
+</script>
+</body>
+</html>
